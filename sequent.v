@@ -93,6 +93,24 @@ Proof.
   split; auto.
 Qed.
 
+Lemma conj_l c d A B:
+  c :: d :: A |- B -> (Conj c d) :: A |- B.
+Proof.
+  intros H.
+  apply ContrL.
+  apply ConjL2.
+  apply exch_head_left; auto.
+Qed.
+
+Lemma disj_r c d A B:
+  A |- c :: d :: B -> A |- (Disj c d) :: B.
+Proof.
+  intros H.
+  apply ContrR.
+  apply DisjR2.
+  apply exch_head_right; auto.
+Qed.
+
 Lemma assum_left c B:
   [c] |- c :: B.
 Proof.
@@ -126,15 +144,12 @@ Proof.
   apply ImplL; auto.
 Qed.
 
-Lemma EM c:
-  [] |- [Disj c (Neg c)].
+Lemma EM c A B:
+  A |- Disj c (Neg c) :: B.
 Proof.
-  apply ContrR.
-  apply DisjR1.
+  apply disj_r.
   apply exch_head_right.
-  apply DisjR2.
-  apply NegR.
-  apply Ident.
+  auto.
 Qed.
 
 Close Scope list_scope.
