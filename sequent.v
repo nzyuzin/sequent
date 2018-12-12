@@ -3,7 +3,7 @@
   found in [Girard, Taylor, Lafont 1989] Proofs and Types.
  *)
 
-From Coq Require List.
+From Coq Require Import PeanoNat List.
 
 Set Implicit Arguments.
 
@@ -13,11 +13,26 @@ Import List.ListNotations.
 Variable atom: Type.
 
 Inductive formulae: Type :=
+| Var: nat -> formulae
 | Atom: atom -> formulae
 | Neg: formulae -> formulae
 | Conj: formulae -> formulae -> formulae
 | Disj: formulae -> formulae -> formulae
-| Impl: formulae -> formulae -> formulae.
+| Impl: formulae -> formulae -> formulae
+| Forall: formulae -> formulae
+| Exists: formulae -> formulae.
+
+Fixpoint subst (x: nat) (v: formulae) (f: formulae) :=
+  match f with
+  | Var n => if n =? x then v else Var n
+  | Atom a => Atom a
+  | Neg f' => subst x v f'
+  | Conj f1 f2 => Conj (subst x v f1) (subst x v f2)
+  | Disj f1 f2 => Disj (subst x v f1) (subst x v f2)
+  | Impl f1 f2 => Impl (subst x v f1) (subst x v f2)
+  | Forall f => Forall (subst (x + 1) v f)
+  | Exists f => Exists (subst x v f)
+  end.
 
 Inductive sequent: list formulae -> list formulae -> Prop :=
 | Ident c: sequent [c] [c]
@@ -50,18 +65,39 @@ Inductive sequent: list formulae -> list formulae -> Prop :=
 
 | ImplL c d A A' B B': sequent A (c :: B) -> sequent (d :: A') B' ->
                        sequent ((Impl c d) :: (A ++ A')) (B ++ B')
-| ImplR c d A B: sequent (c :: A) (d :: B) -> sequent A ((Impl c d) :: B).
+| ImplR c d A B: sequent (c :: A) (d :: B) -> sequent A ((Impl c d) :: B)
+
+| ForallL x a c A B: sequent ((subst x a c) :: A) B -> sequent ((Forall c) :: A) B
+| ForallR c A B: sequent A (c :: B) -> sequent A ((Forall c) :: B)
+
+| ExistsL c A B: sequent (c :: A) B -> sequent ((Exists c) :: A) B
+| ExistsR x a c A B: sequent A ((subst x a c) :: B) -> sequent A ((Exists c) :: B).
 
 Hint Constructors sequent.
 
 Notation "A |- B" := (sequent A B) (at level 70).
 
+Lemma exch_head_left c d A B:
+  c :: d :: A |- B <-> d :: c :: A |- B.
+Proof.
+  replace (c :: d :: A) with (nil ++ c :: d :: A) by trivial.
+  replace (d :: c :: A) with (nil ++ d :: c :: A) by trivial.
+  split; auto.
+Qed.
+
+Lemma exch_head_right c d A B:
+  A |- c :: d :: B <-> A |- d :: c :: B.
+Proof.
+  replace (c :: d :: B) with (nil ++ c :: d :: B) by trivial.
+  replace (d :: c :: B) with (nil ++ d :: c :: B) by trivial.
+  split; auto.
+Qed.
+
 Lemma assum_left c B:
   [c] |- c :: B.
 Proof.
   induction B; auto.
-  replace (c :: a :: B) with (nil ++ (c :: a :: B)) by trivial.
-  apply ExchR.
+  apply exch_head_right.
   now apply WeakR.
 Qed.
 
@@ -69,8 +105,7 @@ Lemma assum_right c A:
   c :: A |- [c].
 Proof.
   induction A; auto.
-  replace (c :: a :: A) with (nil ++ (c :: a :: A)) by trivial.
-  apply ExchL.
+  apply exch_head_left.
   now apply WeakL.
 Qed.
 
@@ -79,17 +114,27 @@ Lemma assum c A B:
 Proof.
   induction A.
   - apply assum_left.
-  - replace (c :: a :: A) with (nil ++ (c :: a :: A)) by trivial.
-    apply ExchL.
+  - apply exch_head_left.
     now apply WeakL.
 Qed.
 
-Hint Resolve assum_left assum_right assum.
+Hint Resolve exch_head_left exch_head_right assum_left assum_right assum.
 
 Lemma modus_ponens c d A B:
   [Impl c d; c] ++ A  |- B ++ [d].
 Proof.
   apply ImplL; auto.
+Qed.
+
+Lemma EM c:
+  [] |- [Disj c (Neg c)].
+Proof.
+  apply ContrR.
+  apply DisjR1.
+  apply exch_head_right.
+  apply DisjR2.
+  apply NegR.
+  apply Ident.
 Qed.
 
 Close Scope list_scope.
