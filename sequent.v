@@ -102,6 +102,34 @@ Proof.
   apply exch_head_left; auto.
 Qed.
 
+Lemma exch_formulae_left c A A' A'' B:
+  A ++ (A' ++ [c]) ++ A'' |- B <-> A ++ [c] ++ A' ++ A'' |- B.
+Proof.
+  revert A; induction A'; intros *; [intuition|].
+  replace (A ++ ((a :: A') ++ [c]) ++ A'') with (A ++ ([a] ++ A' ++ [c]) ++ A'') by trivial.
+  rewrite <- app_assoc.
+  rewrite app_assoc.
+  rewrite IHA'.
+  rewrite <- app_assoc.
+  cbn.
+  intuition; apply ExchL.
+Qed.
+
+Lemma exch_left A B C:
+  A ++ B |- C -> B ++ A |- C.
+Proof.
+  revert A; induction B; intros * H; cbn.
+  - now rewrite app_nil_r in H.
+  - replace (A ++ a :: B) with (A ++ [a] ++ B ++ nil) in H by (rewrite app_nil_r; trivial).
+    rewrite app_assoc in H.
+    rewrite app_nil_r in H.
+    specialize (IHB _ H).
+    replace (B ++ A ++ [a]) with (nil ++ ((B ++ A) ++ [a]) ++ nil) in IHB
+      by (now cbn; rewrite app_nil_r; rewrite app_assoc).
+    rewrite exch_formulae_left in IHB.
+    now cbn in IHB; rewrite app_nil_r in IHB.
+Qed.
+
 Lemma disj_r c d A B:
   A |- c :: d :: B -> A |- (Disj c d) :: B.
 Proof.
