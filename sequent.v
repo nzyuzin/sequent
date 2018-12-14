@@ -12,17 +12,17 @@ Import List.ListNotations.
 
 Variable atom: Type.
 
-Inductive formulae: Type :=
-| Var: nat -> formulae
-| Atom: atom -> formulae
-| Neg: formulae -> formulae
-| Conj: formulae -> formulae -> formulae
-| Disj: formulae -> formulae -> formulae
-| Impl: formulae -> formulae -> formulae
-| Forall: formulae -> formulae
-| Exists: formulae -> formulae.
+Inductive formula: Type :=
+| Var: nat -> formula
+| Atom: atom -> formula
+| Neg: formula -> formula
+| Conj: formula -> formula -> formula
+| Disj: formula -> formula -> formula
+| Impl: formula -> formula -> formula
+| Forall: formula -> formula
+| Exists: formula -> formula.
 
-Fixpoint subst (x: nat) (v: formulae) (f: formulae) :=
+Fixpoint subst (x: nat) (v: formula) (f: formula) :=
   match f with
   | Var n => if n =? x then v else Var n
   | Atom a => Atom a
@@ -34,7 +34,7 @@ Fixpoint subst (x: nat) (v: formulae) (f: formulae) :=
   | Exists f => Exists (subst x v f)
   end.
 
-Inductive sequent: list formulae -> list formulae -> Prop :=
+Inductive sequent: list formula -> list formula -> Prop :=
 | Ident c: sequent [c] [c]
 
 (* Structural rules *)
@@ -102,7 +102,7 @@ Proof.
   apply exch_head_left; auto.
 Qed.
 
-Lemma exch_formulae_left c A A' A'' B:
+Lemma exch_formula_left c A A' A'' B:
   A ++ (A' ++ [c]) ++ A'' |- B <-> A ++ [c] ++ A' ++ A'' |- B.
 Proof.
   revert A; induction A'; intros *; [intuition|].
@@ -126,7 +126,7 @@ Proof.
     specialize (IHB _ H).
     replace (B ++ A ++ [a]) with (nil ++ ((B ++ A) ++ [a]) ++ nil) in IHB
       by (now cbn; rewrite app_nil_r; rewrite app_assoc).
-    rewrite exch_formulae_left in IHB.
+    rewrite exch_formula_left in IHB.
     now cbn in IHB; rewrite app_nil_r in IHB.
 Qed.
 
