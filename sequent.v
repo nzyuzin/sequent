@@ -124,19 +124,19 @@ Proof.
   intuition; apply ExchL.
 Qed.
 
-Lemma exch_l A B C:
-  A ++ B |- C -> B ++ A |- C.
+Lemma exch_l A B C D E:
+  A ++ B ++ C ++ D |- E -> A ++ C ++ B ++ D |- E.
 Proof.
-  revert A; induction B; intros * H; cbn.
-  - now rewrite app_nil_r in H.
-  - replace (A ++ a :: B) with (A ++ [a] ++ B ++ nil) in H by (rewrite app_nil_r; trivial).
-    rewrite app_assoc in H.
-    rewrite app_nil_r in H.
-    specialize (IHB _ H).
-    replace (B ++ A ++ [a]) with (nil ++ ((B ++ A) ++ [a]) ++ nil) in IHB
-      by (now cbn; rewrite app_nil_r; rewrite app_assoc).
-    rewrite exch_formula_l in IHB.
-    now cbn in IHB; rewrite app_nil_r in IHB.
+  revert A C D; induction B; intros * H.
+  - trivial.
+  - cbn.
+    replace (A ++ C ++ a :: B ++ D) with (A ++ C ++ [a] ++ B ++ D) by trivial.
+    setoid_rewrite app_assoc at 2.
+    rewrite exch_formula_l.
+    rewrite app_assoc.
+    apply IHB.
+    rewrite <- app_assoc.
+    trivial.
 Qed.
 
 Lemma exch_formula_r c A B B' B'':
@@ -152,19 +152,19 @@ Proof.
   intuition; apply ExchR.
 Qed.
 
-Lemma exch_r A B C:
-  A |- B ++ C -> A |- C ++ B.
+Lemma exch_r A B C D E:
+  E |- A ++ B ++ C ++ D -> E |- A ++ C ++ B ++ D.
 Proof.
-  revert B; induction C; intros * H; cbn.
-  - now rewrite app_nil_r in H.
-  - replace (B ++ a :: C) with (B ++ [a] ++ C ++ nil) in H by (rewrite app_nil_r; trivial).
-    rewrite app_assoc in H.
-    rewrite app_nil_r in H.
-    specialize (IHC _ H).
-    replace (C ++ B ++ [a]) with (nil ++ ((C ++ B) ++ [a]) ++ nil) in IHC
-      by (now cbn; rewrite app_nil_r; rewrite app_assoc).
-    rewrite exch_formula_r in IHC.
-    now cbn in IHC; rewrite app_nil_r in IHC.
+  revert A C D; induction B; intros * H.
+  - trivial.
+  - cbn.
+    replace (A ++ C ++ a :: B ++ D) with (A ++ C ++ [a] ++ B ++ D) by trivial.
+    setoid_rewrite app_assoc at 2.
+    rewrite exch_formula_r.
+    rewrite app_assoc.
+    apply IHB.
+    rewrite <- app_assoc.
+    trivial.
 Qed.
 
 Lemma assum c A B:
@@ -178,7 +178,7 @@ Proof.
     now apply WeakL.
 Qed.
 
-Hint Resolve exch_head_l exch_head_r assum.
+Hint Resolve exch_l exch_r assum.
 
 Lemma modus_ponens c d A B:
   [Impl c d; c] ++ A  |- B ++ [d].
