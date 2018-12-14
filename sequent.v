@@ -77,7 +77,7 @@ Hint Constructors sequent.
 
 Notation "A |- B" := (sequent A B) (at level 70).
 
-Lemma exch_head_left c d A B:
+Lemma exch_head_l c d A B:
   c :: d :: A |- B <-> d :: c :: A |- B.
 Proof.
   replace (c :: d :: A) with (nil ++ c :: d :: A) by trivial.
@@ -85,7 +85,7 @@ Proof.
   split; auto.
 Qed.
 
-Lemma exch_head_right c d A B:
+Lemma exch_head_r c d A B:
   A |- c :: d :: B <-> A |- d :: c :: B.
 Proof.
   replace (c :: d :: B) with (nil ++ c :: d :: B) by trivial.
@@ -99,10 +99,19 @@ Proof.
   intros H.
   apply ContrL.
   apply ConjL2.
-  apply exch_head_left; auto.
+  apply exch_head_l; auto.
 Qed.
 
-Lemma exch_formula_left c A A' A'' B:
+Lemma disj_r c d A B:
+  A |- c :: d :: B -> A |- (Disj c d) :: B.
+Proof.
+  intros H.
+  apply ContrR.
+  apply DisjR2.
+  apply exch_head_r; auto.
+Qed.
+
+Lemma exch_formula_l c A A' A'' B:
   A ++ (A' ++ [c]) ++ A'' |- B <-> A ++ [c] ++ A' ++ A'' |- B.
 Proof.
   revert A; induction A'; intros *; [intuition|].
@@ -115,7 +124,7 @@ Proof.
   intuition; apply ExchL.
 Qed.
 
-Lemma exch_left A B C:
+Lemma exch_l A B C:
   A ++ B |- C -> B ++ A |- C.
 Proof.
   revert A; induction B; intros * H; cbn.
@@ -126,45 +135,50 @@ Proof.
     specialize (IHB _ H).
     replace (B ++ A ++ [a]) with (nil ++ ((B ++ A) ++ [a]) ++ nil) in IHB
       by (now cbn; rewrite app_nil_r; rewrite app_assoc).
-    rewrite exch_formula_left in IHB.
+    rewrite exch_formula_l in IHB.
     now cbn in IHB; rewrite app_nil_r in IHB.
 Qed.
 
-Lemma disj_r c d A B:
-  A |- c :: d :: B -> A |- (Disj c d) :: B.
+Lemma exch_formula_r c A B B' B'':
+  A |- B ++ (B' ++ [c]) ++ B'' <-> A |- B ++ [c] ++ B' ++ B''.
 Proof.
-  intros H.
-  apply ContrR.
-  apply DisjR2.
-  apply exch_head_right; auto.
+  revert B; induction B'; intros *; [intuition|].
+  replace (B ++ ((a :: B') ++ [c]) ++ B'') with (B ++ ([a] ++ B' ++ [c]) ++ B'') by trivial.
+  rewrite <- app_assoc.
+  rewrite app_assoc.
+  rewrite IHB'.
+  rewrite <- app_assoc.
+  cbn.
+  intuition; apply ExchR.
 Qed.
 
-Lemma assum_left c B:
-  [c] |- c :: B.
+Lemma exch_r A B C:
+  A |- B ++ C -> A |- C ++ B.
 Proof.
-  induction B; auto.
-  apply exch_head_right.
-  now apply WeakR.
-Qed.
-
-Lemma assum_right c A:
-  c :: A |- [c].
-Proof.
-  induction A; auto.
-  apply exch_head_left.
-  now apply WeakL.
+  revert B; induction C; intros * H; cbn.
+  - now rewrite app_nil_r in H.
+  - replace (B ++ a :: C) with (B ++ [a] ++ C ++ nil) in H by (rewrite app_nil_r; trivial).
+    rewrite app_assoc in H.
+    rewrite app_nil_r in H.
+    specialize (IHC _ H).
+    replace (C ++ B ++ [a]) with (nil ++ ((C ++ B) ++ [a]) ++ nil) in IHC
+      by (now cbn; rewrite app_nil_r; rewrite app_assoc).
+    rewrite exch_formula_r in IHC.
+    now cbn in IHC; rewrite app_nil_r in IHC.
 Qed.
 
 Lemma assum c A B:
   c :: A |- c :: B.
 Proof.
   induction A.
-  - apply assum_left.
-  - apply exch_head_left.
+  - induction B; auto.
+    apply exch_head_r.
+    now apply WeakR.
+  - apply exch_head_l.
     now apply WeakL.
 Qed.
 
-Hint Resolve exch_head_left exch_head_right assum_left assum_right assum.
+Hint Resolve exch_head_l exch_head_r assum.
 
 Lemma modus_ponens c d A B:
   [Impl c d; c] ++ A  |- B ++ [d].
@@ -176,7 +190,7 @@ Lemma EM c A B:
   A |- Disj c (Neg c) :: B.
 Proof.
   apply disj_r.
-  apply exch_head_right.
+  apply exch_head_r.
   auto.
 Qed.
 
